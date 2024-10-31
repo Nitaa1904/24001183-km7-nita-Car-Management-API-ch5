@@ -36,7 +36,7 @@ app.set("view engine", "ejs");
 app.use(expressEjsLayout);
 app.set("layout", "layout");
 
-// app.use("/dashboard", indexRoute);
+app.use("/api/v1", indexRoute);
 
 // kesalahan
 errorMiddleware,
