@@ -1,5 +1,5 @@
-const { User } = require("../models");
-console.log(User);
+const { User } = require('../models');
+const bcrypt = require('bcrypt');
 
 const findUsers = async (req, res, next) => {
   try {
@@ -20,13 +20,13 @@ const findUsers = async (req, res, next) => {
 
 const findUserById = async (req, res, next) => {
   try {
-    const user = await Users.findOne({
+    const users = await User.findOne({
       where: {
         id: req.params.id,
       },
     });
 
-    if (!user) {
+    if (!users) {
       return res.status(404).json({
         status: "Error",
         message: "User not found",
@@ -35,7 +35,7 @@ const findUserById = async (req, res, next) => {
 
     res.status(200).json({
       status: "Success",
-      data: user,
+      data: users,
     });
   } catch (err) {
     res.status(500).json({
@@ -47,53 +47,91 @@ const findUserById = async (req, res, next) => {
 };
 
 const updateUser = async (req, res, next) => {
-  const { name, email, phone, alamat, role } = req.body;
+  const { name, email, password, phone, alamat, role } = req.body;
 
   try {
-    const user = await Users.findOne({
-      where: {
-        id: req.params.id,
-      },
+    const user = await User.findOne({
+      where: { id: req.params.id },
     });
 
     if (!user) {
       return res.status(404).json({
-        status: "Error",
-        message: "User not found",
+        status: "Failed",
+        message: "Pengguna tidak ditemukan",
+        isSuccess: false,
       });
     }
 
-    await Users.update(
-      {
-        name,
-        email,
-        phone,
-        alamat,
-        role,
-      },
-      {
-        where: {
-          id: req.params.id,
-        },
-      }
-    );
+    // Update data secara langsung ke instance user
+    user.name = name || user.name;
+    user.email = email || user.email;
+    user.password = password || user.password; // Remember to hash passwords before saving
+    user.phone = phone || user.phone;
+    user.alamat = alamat || user.alamat;
+    user.role = role || user.role;
+
+    await user.save();
 
     res.status(200).json({
       status: "Success",
-      message: "User updated successfully",
+      message: "Sukses update user",
+      isSuccess: true,
     });
   } catch (err) {
+    console.error(err);
     res.status(500).json({
-      status: "Error",
-      message: "Failed to update user",
+      status: "Failed",
+      message: "Terjadi kesalahan pada server",
+      isSuccess: false,
+    });
+  }
+};
+
+const createUser = async (req, res, next) => {
+  const { name, email, password, phone, alamat, role } = req.body;
+
+  // Cek jika password tidak ada atau kosong
+  if (!password) {
+    return res.status(400).json({
+      status: "Failed",
+      message: "Password harus diisi",
+      isSuccess: false,
+    });
+  }
+
+  try {
+    // Enkripsi password sebelum menyimpannya
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const newUser = await User.create({
+      name,
+      email,
+      password: hashedPassword, // Simpan password terenkripsi
+      phone,
+      alamat,
+      role,
+    });
+
+    res.status(201).json({
+      status: "Success",
+      message: "Pengguna berhasil dibuat",
+      data: newUser,
+      isSuccess: true,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({
+      status: "Failed",
+      message: "Gagal membuat pengguna",
       error: err.message,
+      isSuccess: false,
     });
   }
 };
 
 const deleteUser = async (req, res, next) => {
   try {
-    const user = await Users.findOne({
+    const user = await User.findOne({
       where: {
         id: req.params.id,
       },
@@ -106,7 +144,7 @@ const deleteUser = async (req, res, next) => {
       });
     }
 
-    await Users.destroy({
+    await User.destroy({
       where: {
         id: req.params.id,
       },
@@ -129,5 +167,6 @@ module.exports = {
   findUsers,
   findUserById,
   updateUser,
+  createUser,
   deleteUser,
 };

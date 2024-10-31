@@ -7,7 +7,8 @@ const upload = require("../middlewares/uploader");
 
 router.get("/", userController.findUsers);
 router.get('/:id', userController.findUserById);
-router.put('/:id', userController.updateUser);
+router.patch('/:id', userController.updateUser);
+router.post('/', userController.createUser);
 router.delete('/:id', userController.deleteUser);
 
 module.exports = router;
