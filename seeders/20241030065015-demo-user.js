@@ -1,32 +1,22 @@
-'use strict';
+const { faker } = require('@faker-js/faker');
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
   async up(queryInterface, Sequelize) {
-    await queryInterface.bulkInsert('Users', [
-      {
-        name: 'Nita Fitrotul Mar\'ah',
-        email: 'nita@example.com',
-        password: 'hashed_password', // Pastikan ini adalah password yang sudah di-hash
-        phone: '088239561942',
-        alamat: 'Petarangan RT 01 RW 04 Kemranjen, Banyumas',
-        role: 'admin',
-        foto_profil: 'url_foto_profil_nita',
+    const users = [];
+    for (let i = 0; i < 100; i++) {
+      users.push({name: faker.name.fullName(),
+        email: faker.internet.email(),
+        password: faker.internet.password(), // Remember to hash passwords before using in production
+        phone: faker.phone.number('+62 ###########'), // Indonesian phone format example
+        alamat: faker.address.streetAddress(true),
+        role: faker.helpers.arrayElement(['user', 'admin']),
+        foto_profil: faker.image.avatar(),
         createdAt: new Date(),
         updatedAt: new Date(),
-      },
-      {
-        name: 'John Doe',
-        email: 'john@example.com',
-        password: 'hashed_password',
-        phone: '08123456789',
-        alamat: 'Somewhere in Indonesia',
-        role: 'user',
-        foto_profil: 'url_foto_profil_john',
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      },
-    ], {});
+      });
+    }
+    await queryInterface.bulkInsert('Users', users, {});
   },
 
   async down(queryInterface, Sequelize) {
