@@ -8,7 +8,9 @@ const multerFiltering = (req, file, cb) => {
   }
 };
 
+const storage = multer.memoryStorage(); // Menggunakan memory storage untuk menyimpan file dalam buffer
 const uploads = multer({
+  storage: storage,
   fileFilter: multerFiltering,
 });
 

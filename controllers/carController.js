@@ -4,32 +4,51 @@ const path = require("path");
 
 // CREATE a new car
 const createCar = async (req, res) => {
-    const { name, stock, price } = req.body;
-    const imageFile = req.file;
     try {
-      let imageUrl = null;
+      const file = req.file; // Ambil file dari req.file
   
-      if (imageFile) {
-        const uploadResponse = await imagekit.upload({
-          file: imageFile.buffer.toString('base64'),
-          fileName: `${name}_image`, 
+      // Pastikan ada file yang di-upload
+      if (!file) {
+        return res.status(400).json({
+          status: "Error",
+          message: "Image file is required",
         });
-        imageUrl = uploadResponse.url;
       }
   
+      const split = file.originalname.split(".");
+      const ext = split[split.length - 1]; // Dapatkan ekstensi file
+      const { name, stock, price } = req.body;
+  
+      // Upload file ke ImageKit
+      const uploadedImage = await imagekit.upload({
+        file: file.buffer, // Ambil buffer file untuk di-upload
+        fileName: `${split[0]}-${Date.now()}.${ext}`, // Nama file unik
+      });
+  
+      // Periksa jika upload gagal
+      if (!uploadedImage) {
+        return res.status(500).json({
+          status: "Error",
+          message: "Failed to upload image to ImageKit",
+        });
+      }
+  
+      // Buat entri mobil baru di database
       const newCar = await Car.create({
         name,
-        images: imageUrl,
+        images: uploadedImage.url, // Simpan URL gambar dari ImageKit
         stock,
         price,
       });
   
+      // Kirim response sukses
       res.status(201).json({
         status: "Success",
         message: "Car created successfully",
         data: newCar,
       });
     } catch (error) {
+      // Tangani error
       res.status(500).json({
         status: "Error",
         message: "Failed to create car",
@@ -37,6 +56,7 @@ const createCar = async (req, res) => {
       });
     }
   };
+  
   
   
   // READ all cars
@@ -89,7 +109,7 @@ async function getAllCars(req, res) {
   // UPDATE a car by ID
   const updateCar = async (req, res) => {
     const { name, stock, price } = req.body;
-    const imageFile = req.file;
+    const images = req.file ? req.file.path : undefined;
     try {
       const car = await Car.findByPk(req.params.id);
       if (!car) {
