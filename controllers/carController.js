@@ -109,7 +109,7 @@ async function getAllCars(req, res) {
   // UPDATE a car by ID
   const updateCar = async (req, res) => {
     const { name, stock, price } = req.body;
-    const images = req.file ? req.file.path : undefined;
+    const file = req.file; // Ganti images dengan file
     try {
       const car = await Car.findByPk(req.params.id);
       if (!car) {
@@ -119,16 +119,18 @@ async function getAllCars(req, res) {
         });
       }
   
-      let imageUrl = car.images;
+      let imageUrl = car.images; // Ambil URL gambar lama
   
-      if (imageFile) {
+      // Periksa apakah ada file baru yang di-upload
+      if (file) {
         const uploadResponse = await imagekit.upload({
-          file: imageFile.buffer.toString('base64'),
+          file: file.buffer.toString('base64'),
           fileName: `${name}_updated_image`,
         });
-        imageUrl = uploadResponse.url;
+        imageUrl = uploadResponse.url; // Update URL gambar
       }
   
+      // Update informasi mobil
       await car.update({
         name,
         images: imageUrl,
@@ -149,6 +151,8 @@ async function getAllCars(req, res) {
       });
     }
   };
+  
+  
   
   // DELETE a car by ID
   const deleteCar = async (req, res) => {
