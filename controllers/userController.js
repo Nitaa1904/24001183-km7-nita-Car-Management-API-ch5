@@ -1,170 +1,132 @@
-const { User } = require("../models");
-const imagekit = require("../lib/imagekit");
+const { Users } = require("../models");
 
-async function readAllUsers(req, res) {
+const findUsers = async (req, res, next) => {
   try {
-    const users = await User.findAll();
-    res.render("admin/userList", { users });
-  } catch (error) {
-    console.error(error);
-    res.status(500).render("errors/500", {
-      status: "Failed",
-      message: "Failed to get users data",
-      isSuccess: false,
-      error: error.message,
+    const users = await Users.findAll();
+
+    res.status(200).json({
+      status: "Success",
+      data: users,
     });
-  }
-}
-
-const createPage = (req, res) => {
-  try {
-    res.render("users/create", { layout: "layout" });
-  } catch (error) {
-    res.render("errors/404", { layout: "layout" });
+  } catch (err) {
+    res.status(500).json({
+      status: "Error",
+      message: "Failed to retrieve users",
+      error: err.message,
+    });
   }
 };
 
-async function getUserbyId(req, res) {
+const findUserById = async (req, res, next) => {
   try {
-    const id = req.params.id;
+    const user = await Users.findOne({
+      where: {
+        id: req.params.id,
+      },
+    });
 
-    // Ambil data user berdasarkan ID
-    const user = await User.findByPk(id);
-
-    // Jika user tidak ditemukan
     if (!user) {
       return res.status(404).json({
-        status: "Fail",
+        status: "Error",
         message: "User not found",
-        isSuccess: false,
-        data: null,
       });
     }
 
-    // Render detail user tanpa cek role
-    res.render("users/detail", { user });
-  } catch (error) {
-    console.error(error); // Log kesalahan untuk debugging
-    res.status(500).json({
-      status: "Failed",
-      message: error.message,
-      isSuccess: false,
-      error: error.message,
+    res.status(200).json({
+      status: "Success",
+      data: user,
     });
-  }
-}
-
-const createUser = async (req, res) => {
-  const { name, email, password, phone, alamat, role } = req.body;
-
-  try {
-    if (req.file) {
-      const file = req.file;
-      const split = file.originalname.split(".");
-      const ext = split[split.length - 1];
-
-      const uploadedPhotoProfile = await imagekit.upload({
-        file: file.buffer,
-        fileName: file.originalname,
-        extension: ext,
-      });
-      req.body.foto_profil = uploadedPhotoProfile.url;
-    }
-
-    const user = await User.create({
-      name,
-      email,
-      password,
-      phone,
-      alamat,
-      role,
-      foto_profil: req.body.foto_profil,
-    });
-
-    res.redirect("/dashboard/users");
-  } catch (error) {
-    console.log(error);
+  } catch (err) {
     res.status(500).json({
-      status: "error",
-      message: error.message,
+      status: "Error",
+      message: "Failed to retrieve user",
+      error: err.message,
     });
   }
 };
 
-const editPage = async (req, res) => {
-  const { id } = req.params;
+const updateUser = async (req, res, next) => {
+  const { name, email, phone, alamat, role } = req.body;
+
   try {
-    const user = await User.findOne({
+    const user = await Users.findOne({
       where: {
-        id,
+        id: req.params.id,
       },
     });
 
     if (!user) {
-      return res.status(404).render("errors/404", { layout: "layout" });
-    }
-
-    res.render("users/edit", { user, layout: "layout" });
-  } catch (error) {
-    return res.status(500).render("errors/500", { layout: "layout" });
-  }
-};
-
-const updateUser = async (req, res) => {
-  const { id } = req.params;
-  const { name, email, password, phone, alamat, role } = req.body;
-
-  try {
-    const user = await User.findOne({
-      where: {
-        id,
-      },
-    });
-
-    if (!user) {
-      return res.status(404).render("errors/404", { layout: "layout" });
-    }
-
-    if (req.file) {
-      const file = req.file;
-      const split = file.originalname.split(".");
-      const ext = split[split.length - 1];
-
-      const uploadedPhotoProfile = await imagekit.upload({
-        file: file.buffer,
-        fileName: file.originalname,
-        extension: ext,
+      return res.status(404).json({
+        status: "Error",
+        message: "User not found",
       });
+    }
 
-      if (!uploadedPhotoProfile) {
-        return res.status(400).render("errors/400", { layout: "layout" });
+    await Users.update(
+      {
+        name,
+        email,
+        phone,
+        alamat,
+        role,
+      },
+      {
+        where: {
+          id: req.params.id,
+        },
       }
+    );
 
-      user.foto_profil = req.body.foto_profil;
+    res.status(200).json({
+      status: "Success",
+      message: "User updated successfully",
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: "Error",
+      message: "Failed to update user",
+      error: err.message,
+    });
+  }
+};
+
+const deleteUser = async (req, res, next) => {
+  try {
+    const user = await Users.findOne({
+      where: {
+        id: req.params.id,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        status: "Error",
+        message: "User not found",
+      });
     }
-    user.name = name;
-    user.email = email;
 
-    if (password) {
-      user.password = password;
-    }
+    await Users.destroy({
+      where: {
+        id: req.params.id,
+      },
+    });
 
-    user.phone = phone;
-    user.alamat = alamat;
-    user.role = role;
-
-    await user.save();
-    res.redirect("/dashboard/users");
-  } catch (error) {
-    res.status(500).render("errors/500", { layout: "layout" });
+    res.status(200).json({
+      status: "Success",
+      message: "User deleted successfully",
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: "Error",
+      message: "Failed to delete user",
+      error: err.message,
+    });
   }
 };
 
 module.exports = {
-  readAllUsers,
-  editPage,
-  createPage,
-  createUser,
+  findUsers,
+  findUserById,
   updateUser,
-  getUserbyId,
+  deleteUser,
 };

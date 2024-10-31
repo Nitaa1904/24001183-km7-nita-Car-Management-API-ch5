@@ -5,12 +5,9 @@ const upload = require("../middleware/uploader");
 
 //Route disini
 
-router.get("/", userController.readAllUsers);
-router.get("/detail/:id", userController.getUserbyId);
-router.post("/", upload.single("foto_profil"), userController.createUser);
-router.get("/create", userController.createPage);
-router.post("/create", upload.single("foto_profil"), userController.createUser);
-router.get("/edit/:id", userController.editPage);
-router.post("/:id", upload.single("foto_profil"), userController.updateUser);
+router.get("/", userController.findUsers);
+router.get('/:id', userController.findUserById);
+router.put('/:id', userController.updateUser);
+router.delete('/:id', userController.deleteUser);
 
 module.exports = router;
