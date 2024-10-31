@@ -1,13 +1,14 @@
-const express = require("express");
+const express = require('express');
 const morgan = require("morgan");
 const expressEjsLayout = require("express-ejs-layouts");
 const path = require("path");
+const systemController = require('./controllers/systemController');
 
-const {errorMiddleware, notFoundMiddleware } = require("./middlewares")
+
 require("dotenv").config();
 
 const sequelize = require("./config/database");
-const indexRoute = require("./routes");
+const router = require('./routes');
 
 const app = express();
 const port = process.env.DB_PORT;
@@ -15,7 +16,8 @@ const port = process.env.DB_PORT;
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-app.use(morgan(dev));
+app.use(morgan('dev'));
+
 app.use(express.static(`${__dirname}/public`));
 
 app.use((req, res, next) => {
@@ -23,22 +25,12 @@ app.use((req, res, next) => {
   next();
 });
 
-// app.get("/", async (req, res) => {
-//   try {
-//     await sequelize.authenticate();
-//     res.status(200).sendFile(path.join(__dirname, "views", "welcome.html"));
-//   } catch (error) {
-//     res.status(500).sendFile(path.join(__dirname, "views/errors", "500.html"));
-//   }
-// });
 
 app.set("view engine", "ejs");
 app.use(expressEjsLayout);
 app.set("layout", "layout");
 
-app.use("/api/v1", indexRoute);
+app.get("/api/v1/health-check", systemController.healtcheck);
+app.use("/api/v1", router);
 
-// kesalahan
-errorMiddleware,
-notFoundMiddleware
-
+module.exports = app;
